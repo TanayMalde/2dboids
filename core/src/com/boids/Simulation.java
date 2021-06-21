@@ -22,22 +22,31 @@ import java.util.ArrayList;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.min;
+import static java.lang.Math.sqrt;
 
 public class Simulation extends ApplicationAdapter {
 
 	public static Vector2 worldSize;
-	OrthographicCamera camera;
-	Camera cameragui;
-	SpriteBatch batch;
-	Boolean freeze;
-	float polarisation;
-	int polarisationCounter;
-	float minPolarisation;
-	ArrayList<Boid> school;
+	public static ArrayList<Vector2> displacements;
+	public OrthographicCamera camera;
+	public Camera cameragui;
+	public SpriteBatch batch;
+	public Boolean freeze;
+	public float polarisation;
+	public int polarisationCounter;
+	public float minPolarisation;
+	public int fishNo;
+	public float density;
+	public ArrayList<Fish> school;
 
 	@Override
 	public void create () {
-		worldSize = new Vector2(100,100); // don't make a boid before u set the world size
+
+		fishNo = 200;
+		density = 0.02f;
+		float length = (float) sqrt(fishNo/density);
+		worldSize = new Vector2(length, length); // don't make a boid before u set the world size
+		initialiseDisplacements();
 		camera = new OrthographicCamera(worldSize.x, worldSize.y);
 		cameragui = new OrthographicCamera(700,700);
 		batch = new SpriteBatch();
@@ -47,29 +56,33 @@ public class Simulation extends ApplicationAdapter {
 		polarisationCounter = 0;
 		minPolarisation = 0.995f;
 
-		school = new ArrayList<Boid>();
+		school = new ArrayList<Fish>();
 		camera.position.set(worldSize.x/2f,worldSize.y/2f,0);
 		camera.update();
 		cameragui.position.set(350,350,0);
 		cameragui.update();
-		for (int i = 0; i < 200; i ++) {
-			school.add(new Boid());
+		for (int i = 0; i < fishNo; i ++) {
+			school.add(new Zone());
 		}
 	}
 	public void update () {
 //		System.out.println(Gdx.graphics.getFramesPerSecond());
-		for (Boid b : school){
-			b.boundary();
+		for (Fish f : school){
+			f.boundary();
 		}
-		for (Boid b : school){
-			b.update(school);
+		for (Fish f : school){
+			f.defineNeighbourhood(school);
+		}
+		for (Fish f : school){
+			f.update();
 		}
 		Vector2 averageVelocities = new Vector2(0,0);
-		for (Boid b : school){
-			b.updateLast();
-			averageVelocities.add(b.getV().cpy().nor());
+		for (Fish f : school){
+			averageVelocities.add(f.v.cpy().nor());
 		}
 		polarisation = averageVelocities.len() / school.size();
+
+
 		if (polarisation < minPolarisation) {
 			polarisationCounter = 0;
 		}
@@ -80,12 +93,99 @@ public class Simulation extends ApplicationAdapter {
 
 	@Override
 	public void render () {
-		if (polarisationCounter > 5 && freeze == false) {
 
+		if (freeze == false) {
+			update();
+		}
+		if (polarisationCounter > 5 && freeze == false) {
+			outputData();
+		}
+
+		if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)){
+			Gdx.app.exit();
+		}
+
+		ScreenUtils.clear(1f, 0.6f, 0.3f, 1);
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+
+		for (Fish f : school){
+			f.draw(batch);
+		}
+		batch.end();
+		ShapeRenderer shapeRenderer = new ShapeRenderer();
+		shapeRenderer.setProjectionMatrix(camera.combined);
+		shapeRenderer.setColor(Color.BLACK);
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+		shapeRenderer.end();
+		batch.setProjectionMatrix(cameragui.combined);
+		batch.begin();
+		BitmapFont font = new BitmapFont();
+		font.setColor(Color.BLACK);
+		font.getData().setScale(1f);
+		font.draw(batch,"polarisation " + polarisation, 20,20);
+		batch.end();
+
+	}
+	public Vector2 averagePosition() {
+//		Vector2 averagePosition = new Vector2();
+//		for (Fish b : school) {
+//			averagePosition.add(b.getP());
+//		}
+//		return averagePosition.scl(1f/school.size());
+
+		Vector2 initialBoidPos = new Vector2();
+		Vector2 averagePosition = new Vector2();
+
+		for (Fish f : school) {
+			if (f.p.x > 0 && f.p.x < 100 && f.p.y > 0 && f.p.y < 100) {
+				initialBoidPos = f.p.cpy();
+				averagePosition.add(initialBoidPos);
+				break;
+			}
+		}
+		for (Fish f : school) {
+			if (! f.equals(initialBoidPos)) {
+				averagePosition.add(cvp(initialBoidPos, f.p).cpy());
+			}
+		}
+		averagePosition.scl(1f/school.size());
+		return cvp(new Vector2(worldSize.cpy().scl(0.5f)), averagePosition);
+	}
+	//  closest virtual position
+	//  calculates position of the closest virtual fish of b from a
+	public static Vector2 cvp (Vector2 a, Vector2 b) {
+		Vector2 output = b.cpy();
+		float smallestDistance = a.dst(b);
+
+		for (Vector2 d : Simulation.displacements) {
+			Vector2 point = b.cpy().add(d);
+			float dist = a.dst(point);
+
+			if (abs(dist) < abs(smallestDistance)) {
+				smallestDistance = dist;
+				output = point.cpy();
+			}
+		}
+		return output;
+	}
+	private void initialiseDisplacements() {
+		displacements = new ArrayList<Vector2>();
+		displacements.add(new Vector2(0, 0));
+		displacements.add(new Vector2(Simulation.worldSize.x, 0));
+		displacements.add(new Vector2(-Simulation.worldSize.x, 0));
+		displacements.add(new Vector2(0, Simulation.worldSize.y));
+		displacements.add(new Vector2(0, -Simulation.worldSize.y));
+		displacements.add(new Vector2(Simulation.worldSize.x, Simulation.worldSize.y));
+		displacements.add(new Vector2(Simulation.worldSize.x, -Simulation.worldSize.y));
+		displacements.add(new Vector2(-Simulation.worldSize.x, Simulation.worldSize.y));
+		displacements.add(new Vector2(-Simulation.worldSize.x, -Simulation.worldSize.y));
+	}
+	public void outputData () {
 			Vector2 averagePosition = averagePosition().cpy();
 			Vector2 averageVelocity = new Vector2();
-			for (Boid b : school){
-				averageVelocity.add(b.getV());
+			for (Fish f : school){
+				averageVelocity.add(f.v);
 			}
 			averageVelocity.scl(1f / school.size());
 
@@ -109,12 +209,12 @@ public class Simulation extends ApplicationAdapter {
 			while (stop == false) {
 				count = 0;
 				averageCorrelation = 0f;
-				for (Boid a : school) {
-					for (Boid b : school) {
+				for (Fish a : school) {
+					for (Fish b : school) {
 						if (! a.equals(b)) {
-							if (abs((Boid.cvd(averagePosition,a)).dst(Boid.cvd(averagePosition,b))) > distance - tolerance &&
-									abs((Boid.cvd(averagePosition,a)).dst(Boid.cvd(averagePosition,b))) < distance + tolerance) {
-								averageCorrelation += (a.getV().cpy().sub(averageVelocity).dot(b.getV().cpy().sub(averageVelocity)));
+							if (abs((cvp(averagePosition,a.p)).dst(cvp(averagePosition,b.p))) > distance - tolerance &&
+									abs((cvp(averagePosition,a.p)).dst(cvp(averagePosition,b.p))) < distance + tolerance) {
+								averageCorrelation += (a.v.cpy().sub(averageVelocity).dot(b.v.cpy().sub(averageVelocity)));
 								count ++;
 							}
 						}
@@ -132,64 +232,8 @@ public class Simulation extends ApplicationAdapter {
 //				System.out.println(i / correlations.get(0));
 			}
 			freeze = true;
-//			Gdx.app.exit();
-		}
-//		if (freeze == false) {
-			update();
-//		}
-
-		if (Gdx.input.isKeyPressed(Input.Keys.ESCAPE)){
-			Gdx.app.exit();
-		}
-
-		ScreenUtils.clear(1f, 0.6f, 0.3f, 1);
-		batch.setProjectionMatrix(camera.combined);
-		batch.begin();
-
-		for (Boid b : school){
-			b.draw(batch);
-		}
-		batch.end();
-		ShapeRenderer shapeRenderer = new ShapeRenderer();
-		shapeRenderer.setProjectionMatrix(camera.combined);
-		shapeRenderer.setColor(Color.BLACK);
-		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-//		shapeRenderer.circle(boid1.getP().x, boid1.getP().y, Boid.viewDistance);
-		shapeRenderer.end();
-		batch.setProjectionMatrix(cameragui.combined);
-		batch.begin();
-		BitmapFont font = new BitmapFont();
-		font.setColor(Color.BLACK);
-		font.getData().setScale(1f);
-		font.draw(batch,"polarisation " + polarisation, 20,20);
-		batch.end();
 	}
-	public Vector2 averagePosition() {
-//		Vector2 averagePosition = new Vector2();
-//		for (Boid b : school) {
-//			averagePosition.add(b.getP());
-//		}
-//		return averagePosition.scl(1f/school.size());
 
-		Vector2 initialBoidPos = new Vector2();
-		Vector2 averagePosition = new Vector2();
-
-		for (Boid b : school) {
-			if (b.getP().x > 0 && b.getP().x < 100 && b.getP().y > 0 && b.getP().y < 100) {
-				initialBoidPos = b.getP().cpy();
-				averagePosition.add(initialBoidPos);
-				break;
-			}
-		}
-		for (Boid b : school) {
-			if (! b.equals(initialBoidPos)) {
-				averagePosition.add(Boid.cvd(initialBoidPos, b).cpy());
-			}
-		}
-		averagePosition.scl(1f/school.size());
-		return Boid.cvd(new Vector2(worldSize.cpy().scl(0.5f)), averagePosition);
-	}
-	
 	@Override
 	public void dispose () {
 		batch.dispose();

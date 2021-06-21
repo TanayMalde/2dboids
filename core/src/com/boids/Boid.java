@@ -14,7 +14,7 @@ import static java.lang.Math.tan;
 
 public class Boid {
 
-    public  Texture texture;
+    public Texture texture;
     public static float viewDistance;
     public static float separationDistance;
     public static float alignmentCoef;
