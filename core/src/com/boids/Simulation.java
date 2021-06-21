@@ -38,10 +38,16 @@ public class Simulation extends ApplicationAdapter {
 	public int fishNo;
 	public float density;
 	public ArrayList<Fish> school;
+	public int neighbourhoodType;
+	//	1.metric
+	//	2.topological
+	//	3.vision
+	//	4.zone
 
 	@Override
 	public void create () {
 
+		neighbourhoodType = 4;
 		fishNo = 200;
 		density = 0.02f;
 		float length = (float) sqrt(fishNo/density);
@@ -62,7 +68,14 @@ public class Simulation extends ApplicationAdapter {
 		cameragui.position.set(350,350,0);
 		cameragui.update();
 		for (int i = 0; i < fishNo; i ++) {
-			school.add(new Zone());
+
+			switch (neighbourhoodType) {
+				case 1:school.add(new Metric()); break;
+				case 2:school.add(new Topological(7)); break;
+				case 3:school.add(new Vision()); break;
+				case 4:school.add(new Zone()); break;
+
+			}
 		}
 	}
 	public void update () {
