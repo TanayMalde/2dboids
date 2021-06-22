@@ -35,6 +35,7 @@ public abstract class Fish {
         Random r = new Random();
         p = new Vector2(r.nextInt((int)Simulation.worldSize.x), r.nextInt((int)Simulation.worldSize.y));
         v = new Vector2(-1 + r.nextFloat() * (2), -1 + r.nextFloat() * (2));
+        v.nor();
     }
 
     public abstract void defineNeighbourhood (ArrayList<Fish> school);

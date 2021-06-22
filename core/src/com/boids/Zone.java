@@ -2,7 +2,7 @@ package com.boids;
 
 import java.util.ArrayList;
 
-public class Zone extends Metric{
+public class Zone extends Vision{
     public ArrayList<Neighbour> cohesionNeighbourhood;
 
     @Override
