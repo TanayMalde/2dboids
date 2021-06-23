@@ -39,6 +39,7 @@ public class Simulation extends ApplicationAdapter {
 	public float density;
 	public ArrayList<Fish> school;
 	public int neighbourhoodType;
+	public long startTime;
 	//	1.metric
 	//	2.topological
 	//	3.vision
@@ -47,7 +48,8 @@ public class Simulation extends ApplicationAdapter {
 	@Override
 	public void create () {
 
-		neighbourhoodType = 4;
+		startTime = System.currentTimeMillis();
+		neighbourhoodType = 3;
 		fishNo = 200;
 		density = 0.02f;
 		float length = (float) sqrt(fishNo/density);
@@ -60,7 +62,7 @@ public class Simulation extends ApplicationAdapter {
 		freeze = false;
 		polarisation = 0;
 		polarisationCounter = 0;
-		minPolarisation = 0.995f;
+		minPolarisation = 0.985f;
 
 		school = new ArrayList<Fish>();
 		camera.position.set(worldSize.x/2f,worldSize.y/2f,0);
@@ -202,9 +204,11 @@ public class Simulation extends ApplicationAdapter {
 			}
 			averageVelocity.scl(1f / school.size());
 
-			System.out.println("Final Average Position: " + averagePosition);
-			System.out.println("Average Velocity: " + averageVelocity);
-			System.out.println("Average VelocityLength: " + averageVelocity.len());
+//			System.out.println("Final Average Position: " + averagePosition);
+//			System.out.println("Average Velocity: " + averageVelocity);
+//			System.out.println("Average VelocityLength: " + averageVelocity.len());
+//			System.out.println("Time elapsed in milliseconds = " + ((System.currentTimeMillis() - this.startTime)));
+			System.out.println((System.currentTimeMillis() - this.startTime));
 
 
 
@@ -241,7 +245,7 @@ public class Simulation extends ApplicationAdapter {
 			}
 //			System.out.println(correlations);
 			for (float i : correlations) {
-				System.out.println(i);
+//				System.out.println(i);
 //				System.out.println(i / correlations.get(0));
 			}
 			freeze = true;
