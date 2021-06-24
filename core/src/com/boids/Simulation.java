@@ -49,7 +49,7 @@ public class Simulation extends ApplicationAdapter {
 	public void create () {
 
 		startTime = System.currentTimeMillis();
-		neighbourhoodType = 3;
+		neighbourhoodType = 4;
 		fishNo = 200;
 		density = 0.02f;
 		float length = (float) sqrt(fishNo/density);
@@ -197,58 +197,96 @@ public class Simulation extends ApplicationAdapter {
 		displacements.add(new Vector2(-Simulation.worldSize.x, -Simulation.worldSize.y));
 	}
 	public void outputData () {
-			Vector2 averagePosition = averagePosition().cpy();
-			Vector2 averageVelocity = new Vector2();
-			for (Fish f : school){
-				averageVelocity.add(f.v);
-			}
-			averageVelocity.scl(1f / school.size());
+		Vector2 averagePosition = averagePosition().cpy();
+		Vector2 averageVelocity = new Vector2();
+		for (Fish f : school){
+			averageVelocity.add(f.v);
+		}
+		averageVelocity.scl(1f / school.size());
 
 //			System.out.println("Final Average Position: " + averagePosition);
 //			System.out.println("Average Velocity: " + averageVelocity);
 //			System.out.println("Average VelocityLength: " + averageVelocity.len());
 //			System.out.println("Time elapsed in milliseconds = " + ((System.currentTimeMillis() - this.startTime)));
-			System.out.println((System.currentTimeMillis() - this.startTime));
+//			System.out.println((System.currentTimeMillis() - this.startTime));
 
 
 
-			Boolean stop = false;
-			int count;
-			int listlength = 0;
-			float distance = 0;
-			float maxDistance = (float) Math.ceil((worldSize.x * 1.5f) / 2f);
-			float step = 1;
-			float tolerance = step / 2f;
+		Boolean stop = false;
+		int count;
+		int listlength = 0;
+		float distance = 0;
+		float maxDistance = (float) Math.ceil((worldSize.x * 1.5f) / 2f);
+		float step = 1;
+		float tolerance = step / 2f;
 
-			float averageCorrelation;
-			ArrayList<Float> correlations = new ArrayList<Float>();
+		float averageCorrelation;
+		ArrayList<Float> correlations = new ArrayList<Float>();
 
-			while (stop == false) {
-				count = 0;
-				averageCorrelation = 0f;
-				for (Fish a : school) {
-					for (Fish b : school) {
-						if (! a.equals(b)) {
-							if (abs((cvp(averagePosition,a.p)).dst(cvp(averagePosition,b.p))) > distance - tolerance &&
-									abs((cvp(averagePosition,a.p)).dst(cvp(averagePosition,b.p))) < distance + tolerance) {
-								averageCorrelation += (a.v.cpy().sub(averageVelocity).dot(b.v.cpy().sub(averageVelocity)));
-								count ++;
-							}
+		while (stop == false) {
+			count = 0;
+			averageCorrelation = 0f;
+			for (Fish a : school) {
+				for (Fish b : school) {
+					if (! a.equals(b)) {
+						if (abs((cvp(averagePosition,a.p)).dst(cvp(averagePosition,b.p))) > distance - tolerance &&
+								abs((cvp(averagePosition,a.p)).dst(cvp(averagePosition,b.p))) < distance + tolerance) {
+							averageCorrelation += (a.v.cpy().sub(averageVelocity).dot(b.v.cpy().sub(averageVelocity)));
+							count ++;
 						}
 					}
 				}
-				correlations.add(averageCorrelation / count);
-				distance += step;
-				if (distance > maxDistance) {
-					stop = true;
+			}
+			correlations.add(averageCorrelation / count);
+			distance += step;
+			if (distance > maxDistance) {
+				stop = true;
+			}
+		}
+		int counter = correlations.size();
+		float divider = correlations.get(2);
+		for (int i = 0; i < counter; i ++) {
+			if (i <= 1 ) correlations.set(i, 1f);
+			else if (!Float.isNaN(correlations.get(i))){
+				correlations.set(i, correlations.get(i)/divider);
+				if (correlations.get(i) > 1) {
+					correlations.set(i, 1f);
 				}
 			}
-//			System.out.println(correlations);
-			for (float i : correlations) {
-//				System.out.println(i);
-//				System.out.println(i / correlations.get(0));
+		}
+		ArrayList<Float> tempcorrelations = new ArrayList<Float>(correlations);
+		for (float i : tempcorrelations) {
+			if (Float.isNaN(i)) {
+				correlations.remove(i);
 			}
-			freeze = true;
+		}
+//		correlations.remove(0);
+//		correlations.remove(0);
+//		ArrayList<Float> tempcorrelations = new ArrayList<Float>(correlations);
+//		for (float i : tempcorrelations) {
+//			if (Float.isNaN(i)) {
+//				correlations.remove(i);
+//			}
+//		}
+//		for (float i : correlations) {
+//			i = i / correlations.get(0);
+//		}
+//		for (float i : correlations) {
+//			if (i > 1f) {
+//				i = 1f;
+//			}
+//		}
+//		for (float i : correlations) {
+//			System.out.println(i);
+//		}
+		for (int i = 0; i < correlations.size(); i ++) {
+			if (correlations.get(i) < 0) {
+				System.out.println(i);
+				break;
+			}
+		}
+		freeze = true;
+		Gdx.app.exit();
 	}
 
 	@Override
